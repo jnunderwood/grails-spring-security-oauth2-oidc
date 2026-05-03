@@ -17,12 +17,14 @@ security {
     oauth2 {
         providers {
             oidc {
-                domain = 'https://some.oidc.provider.domain' // Mandatory
-                api_key = "changeme_apikey" // Mandatory 
-                api_secret = "changeme_apisecret" // Mandatory
-                successUri = "/oauth2/oidc/success" // Optional
-                failureUri = "/oauth2/oidc/failure" // Optional
-                callback = "/oauth2/oidc/callback" // Optional
+                domain = "https://your.oidc.provider.domain" // Required
+                api_key = "changeme_apikey"                  // Required
+                api_secret = "changeme_apisecret"            // Required
+                successUri = "/oauth2/oidc/success"          // Optional
+                failureUri = "/oauth2/oidc/failure"          // Optional
+                callback = "/oauth2/oidc/callback"           // Optional
+                scopes = "openid profile email"              // Optional
+                scopeSeparator = " "                         // Optional
             }
         }
     }
