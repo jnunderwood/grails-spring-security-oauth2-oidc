@@ -20,27 +20,28 @@ import com.github.scribejava.core.extractors.TokenExtractor
 import com.github.scribejava.core.model.OAuth2AccessToken
 
 class OidcOauth2Api extends DefaultApi20 {
-    
-    final static String PROVIDER_ID = 'oidc'
-    
-    final String domain
 
-    OidcOauth2Api(String domain) {
-        this.domain = domain.endsWith('/') ? domain[0..-2] : domain
+    final static String PROVIDER_ID = 'oidc'
+
+    final OidcOauth2Config oidcOauth2Config
+
+    OidcOauth2Api(OidcOauth2Config oidcOauth2Config) {
+        this.oidcOauth2Config = oidcOauth2Config
     }
 
     @Override
     String getAccessTokenEndpoint() {
-        return "$domain/oauth/token"
+        return oidcOauth2Config.tokenEndpoint
     }
 
     @Override
     protected String getAuthorizationBaseUrl() {
-        return "$domain/authorize"
+        return oidcOauth2Config.authorizationEndpoint
     }
 
     @Override
     TokenExtractor<OAuth2AccessToken> getAccessTokenExtractor() {
+        // TODO: this code is the same as default extractor in the superclass; can we remove this method?
         return OAuth2AccessTokenJsonExtractor.instance()
     }
 }
