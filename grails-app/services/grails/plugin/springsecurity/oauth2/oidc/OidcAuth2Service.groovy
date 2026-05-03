@@ -26,38 +26,52 @@ import com.github.scribejava.core.builder.ServiceBuilder
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model.OAuth2AccessToken
 import com.github.scribejava.core.oauth.OAuth20Service
-import grails.plugin.springsecurity.oauth2.SpringSecurityOauth2BaseService
 import grails.plugin.springsecurity.oauth2.exception.OAuth2Exception
 import grails.plugin.springsecurity.oauth2.service.OAuth2AbstractProviderService
 import grails.plugin.springsecurity.oauth2.token.OAuth2SpringToken
 import grails.plugin.springsecurity.oauth2.util.OAuth2ProviderConfiguration
-import groovy.json.JsonSlurper
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.InitializingBean
 
+import groovy.json.JsonSlurper
+import groovy.transform.CompileStatic
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.util.concurrent.TimeUnit
 
 @CompileStatic
-class OidcAuth2Service extends OAuth2AbstractProviderService implements InitializingBean{
+class OidcAuth2Service extends OAuth2AbstractProviderService implements InitializingBean {
 
-    SpringSecurityOauth2BaseService springSecurityOauth2BaseService
-    
-    OidcOauth2Config OidcOauth2Config
-    
+    private static final String[] DEFAULT_SCOPES = ['openid', 'profile', 'email']
+
+    OidcOauth2Config oidcOauth2Config
+
     final String providerID = OidcOauth2Api.PROVIDER_ID
     final Class apiClass = OidcOauth2Api
-    final String scopeSeparator = ' '
-    private JWTVerifier jwtVerifier 
-    
+    private JWTVerifier jwtVerifier
+
+    @Override
     String getProfileScope() {
-        "${OidcOauth2Config.domain}/userinfo"
+        oidcOauth2Config.userInfoEndpoint
     }
+
+    @Override
     String getScopes() {
-        OidcOauth2Config.scope
+        def scopes = oidcOauth2Config.scope ?: DEFAULT_SCOPES.join(scopeSeparator)
+
+        // we should always include 'openid' scope since it's required for OIDC
+        // TODO: should we always include 'profile' and 'email' scopes as well?
+        if (!scopes?.contains('openid')) {
+            scopes = scopes + scopeSeparator + 'openid'
+        }
+
+        scopes
     }
-    
+
+    @Override
+    String getScopeSeparator() {
+        // default to space if not configured, since OIDC providers typically use space-separated scopes
+        oidcOauth2Config.scopeSeparator ?: ' '
+    }
 
     @Override
     OAuth2SpringToken createSpringAuthToken(OAuth2AccessToken accessToken) {
@@ -77,23 +91,22 @@ class OidcAuth2Service extends OAuth2AbstractProviderService implements Initiali
 
     @Override
     OAuth20Service buildScribeService(OAuth2ProviderConfiguration providerConfiguration) {
-        DefaultApi20 api = new OidcOauth2Api(OidcOauth2Config.domain)
+        DefaultApi20 api = new OidcOauth2Api(oidcOauth2Config)
 
-        return new ServiceBuilder(OidcOauth2Config.apiKey)
-                .apiSecret(OidcOauth2Config.apiSecret)
-                .defaultScope(OidcOauth2Config.scope)
+        return new ServiceBuilder(oidcOauth2Config.apiKey)
+                .apiSecret(oidcOauth2Config.apiSecret)
+                .defaultScope(scopes)
                 .callback(providerConfiguration.callbackUrl)
                 .build(api)
     }
 
-    
     @Override
     void afterPropertiesSet() throws Exception {
-        def jwkProvider = new JwkProviderBuilder(OidcOauth2Config.domain)
+        def jwkProvider = new JwkProviderBuilder(oidcOauth2Config.jwksUrl)
                 .cached(10, 24, TimeUnit.HOURS)
                 .rateLimited(10, 1, TimeUnit.MINUTES)
                 .build()
-        
+
         RSAKeyProvider keyProvider = new RSAKeyProvider() {
             @Override
             RSAPublicKey getPublicKeyById(String kid) {
@@ -102,7 +115,7 @@ class OidcAuth2Service extends OAuth2AbstractProviderService implements Initiali
 
             @Override
             RSAPrivateKey getPrivateKey() {
-                // return the private key used 
+                // return the private key used
                 return null
             }
 
@@ -113,13 +126,11 @@ class OidcAuth2Service extends OAuth2AbstractProviderService implements Initiali
         }
 
         def algorithm = Algorithm.RSA256(keyProvider)
-        String issuerDomain = OidcOauth2Config.domain.endsWith('/') ? OidcOauth2Config.domain : OidcOauth2Config.domain + '/'
         jwtVerifier = JWT.require(algorithm)
-                .withIssuer(issuerDomain)
-                .withAnyOfAudience(OidcOauth2Config.apiKey)
+                .withIssuer(oidcOauth2Config.issuer)
+                .withAnyOfAudience(oidcOauth2Config.apiKey)
                 .build()
     }
-
 
     private void verifyJWT(DecodedJWT decoded) {
         try {
@@ -128,5 +139,4 @@ class OidcAuth2Service extends OAuth2AbstractProviderService implements Initiali
             throw new OAuth2Exception("OIDC token is invalid", e)
         }
     }
-
 }
