@@ -44,16 +44,16 @@ grails:
                         scopeSeparator: " "                         # Default: " "
                         
                         # these endpoints are optional and will be discovered from OIDC metadata if not provided
-                        authorizationEndpoint: "/authorize"
-                        tokenEndpoint: "/token"
-                        userInfoEndpoint: "/userinfo"
-                        issuer: "/issuer"
-                        logoutUri: "/logout"
-                        jwksUri: "/keys"
+                        authorizationEndpoint: "https://your.oidc.provider.domain/oauth2/authorize"
+                        tokenEndpoint: "https://your.oidc.provider.domain/oauth2/token"
+                        userInfoEndpoint: "https://your.oidc.provider.domain/openid/userinfo"
+                        issuer: "https://your.oidc.provider.domain/"
+                        logoutUri: "https://your.oidc.provider.domain/oauth2/logout"
+                        jwksUri: "https://your.oidc.provider.domain/oauth2/keys"
 ```
 
-> Note that `providerNames` should not include `oidc` since the OAuth2 plugin will add all 
-> providers defined under `oauth2.providers` to the list of provider names.
+> Note that `springsecurity.providerNames` should not include `oidc` since the OAuth2 plugin 
+> will add all providers defined under `oauth2.providers` to the list of provider names.
 
 Some providers require the `domain` to include a tenant ID or other path segments, so the
 plugin will use the full `domain` value as the Issuer URI when validating tokens. For example,
@@ -61,7 +61,7 @@ the `domain` might be `https://login.microsoftonline.com/{your_tenant_id}/v2.0` 
 releases of Azure AD.
 
 The plugin will try to obtain the endpoint URIs from the user configuration first, and if any 
-of the endpoints are not provided, it will attempt to discover them from the OIDC metadata JSON. 
+of the endpoints are not provided, it will attempt to discover them from the OIDC metadata JSON.
 This metadata is downloaded and parsed from the well-known OpenID Connect configuration URL 
 (`{domain}/.well-known/openid-configuration`).
 

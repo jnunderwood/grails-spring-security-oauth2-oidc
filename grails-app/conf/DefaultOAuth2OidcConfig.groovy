@@ -25,12 +25,12 @@ security {
                 callback = "/oauth2/oidc/callback"
                 scopes = "openid profile email"
                 scopeSeparator = " "
-                authorizationEndpoint = "/authorize"
-                tokenEndpoint = "/token"
-                userInfoEndpoint = "/userinfo"
-                issuer = "/issuer"
-                logoutUri = "/logout"
-                jwksUri = "/keys"
+                authorizationEndpoint = "https://your.oidc.provider.domain/oauth2/authorize"
+                tokenEndpoint = "https://your.oidc.provider.domain/oauth2/token"
+                userInfoEndpoint = "https://your.oidc.provider.domain/openid/userinfo"
+                issuer = "https://your.oidc.provider.domain/"
+                logoutUri = "https://your.oidc.provider.domain/oauth2/logout"
+                jwksUri = "https://your.oidc.provider.domain/oauth2/keys"
             }
         }
     }
