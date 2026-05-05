@@ -11,8 +11,8 @@ Add the following dependencies in `build.gradle`
 ```
 dependencies {
 ...
-    compile 'org.apache.grails:grails-spring-security-oauth2:7.0.1'
-    compile 'org.grails.plugins:spring-security-oauth2-oidc:1.0.+'
+    implementation 'org.apache.grails:grails-spring-security-oauth2:7.0.2'
+    implementation 'org.grails.plugins:spring-security-oauth2-oidc:1.0.+'
 ...
 }
 ```
@@ -31,14 +31,25 @@ grails:
             oauth2:
                 providers:
                     oidc:
-                        domain: "https://your.oidc.provider.domain" # required (aka Issuer URI)
-                        api_key: "oidc-api-key"                     # required (aka Client ID)
-                        api_secret: "oidc-api-secret"               # required (aka Client Secret)
-                        successUri: "/oauth2/oidc/success"          # optional (Default: "/oauth2/oidc/success")
-                        failureUri: "/oauth2/oidc/failure"          # optional (Default: "/oauth2/oidc/failure")
-                        callback: "/oauth2/oidc/callback"           # optional (Default: "/oauth2/oidc/callback")
-                        scopes: "some_scope another_scope"          # optional (Default: "openid profile email")
-                        scopeSeparator: " "                         # optional (Default: " ")
+                        # these settings are required
+                        domain: "https://your.oidc.provider.domain" # aka Issuer URI
+                        api_key: "oidc-api-key"                     # aka Client ID
+                        api_secret: "oidc-api-secret"               # aka Client Secret
+                        
+                        # these settings are optional and will default to the values shown below if not provided
+                        successUri: "/oauth2/oidc/success"          # Default: "/oauth2/oidc/success"
+                        failureUri: "/oauth2/oidc/failure"          # Default: "/oauth2/oidc/failure"
+                        callback: "/oauth2/oidc/callback"           # Default: "/oauth2/oidc/callback"
+                        scopes: "some_scope another_scope"          # Default: "openid profile email"
+                        scopeSeparator: " "                         # Default: " "
+                        
+                        # these endpoints are optional and will be discovered from OIDC metadata if not provided
+                        authorizationEndpoint: "/authorize"
+                        tokenEndpoint: "/token"
+                        userInfoEndpoint: "/userinfo"
+                        issuer: "/issuer"
+                        logoutUri: "/logout"
+                        jwksUri: "/keys"
 ```
 
 > Note that `providerNames` should not include `oidc` since the OAuth2 plugin will add all 
@@ -46,11 +57,13 @@ grails:
 
 Some providers require the `domain` to include a tenant ID or other path segments, so the
 plugin will use the full `domain` value as the Issuer URI when validating tokens. For example,
-the `domain` might be `https://login.microsoftonline.com/{your_tenant_id}/v2.0` for Azure AD.
+the `domain` might be `https://login.microsoftonline.com/{your_tenant_id}/v2.0` for recent
+releases of Azure AD.
 
-The plugin always downloads and parses the provider metadata JSON from the well-known OpenID
-Connect configuration URL (`{domain}/.well-known/openid-configuration`), and uses that document
-for `authorization_endpoint`, `token_endpoint`, and `userinfo_endpoint`.
+The plugin will try to obtain the endpoint URIs from the user configuration first, and if any 
+of the endpoints are not provided, it will attempt to discover them from the OIDC metadata JSON. 
+This metadata is downloaded and parsed from the well-known OpenID Connect configuration URL 
+(`{domain}/.well-known/openid-configuration`).
 
 You can replace the `successUri`, `failureUri`, and `callback` default values with your own 
 controller implementation.

@@ -20,13 +20,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
 import groovy.json.JsonSlurper
+import groovy.util.logging.Slf4j
 
 /**
- * Configuration class that holds both the user-configured OIDC provider settings and the lazily loaded
- * OIDC metadata values from the provider's discovery document. The OIDC metadata values are loaded
- * on demand when one of the corresponding getters is called for the first time, and are cached for
- * subsequent calls.
+ * Configuration class for OIDC OAuth2 provider settings. This class extends the base
+ * OAuth2ProviderConfiguration and adds OIDC-specific properties and logic to lazily
+ * load the provider's metadata from the OIDC discovery document. The configuration
+ * values can be set by the user or automatically loaded from the provider's metadata
+ * when accessed.
  */
+@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = 'grails.plugin.springsecurity.oauth2.providers.oidc')
 class OidcOauth2Config extends OAuth2ProviderConfiguration {
@@ -36,7 +39,7 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
     String scope // configured by the 'scopes' (plural) property; optional
     String scopeSeparator // optional
 
-    // these values are lazily loaded from the OIDC discovery document
+    // these values are user-configured OR lazily loaded from the OIDC discovery document
     String authorizationEndpoint
     String tokenEndpoint
     String userInfoEndpoint
@@ -44,8 +47,8 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
     String logoutUri
     String jwksUri
 
-    // has the OIDC configuration has been loaded? used to ensure thread-safe initialization
     private volatile boolean openIdConfigurationLoaded
+    private Map<String, Object> metadata
 
     String getDomain() {
         if (!this.@domain) {
@@ -55,33 +58,52 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
     }
 
     String getAuthorizationEndpoint() {
-        initializeOpenIdConfiguration()
+        if (!this.@authorizationEndpoint) {
+            initializeOpenIdConfiguration()
+            this.@authorizationEndpoint = readUrlFromMetadata('authorization_endpoint')
+        }
         this.@authorizationEndpoint
     }
 
     String getTokenEndpoint() {
-        initializeOpenIdConfiguration()
+        if (!this.@tokenEndpoint) {
+            initializeOpenIdConfiguration()
+            this.@tokenEndpoint = readUrlFromMetadata('token_endpoint')
+        }
         this.@tokenEndpoint
     }
 
     String getUserInfoEndpoint() {
-        initializeOpenIdConfiguration()
+        if (!this.@userInfoEndpoint) {
+            initializeOpenIdConfiguration()
+            this.@userInfoEndpoint = readUrlFromMetadata('userinfo_endpoint')
+        }
         this.@userInfoEndpoint
     }
 
     String getIssuer() {
-        initializeOpenIdConfiguration()
+        if (!this.@issuer) {
+            initializeOpenIdConfiguration()
+            this.@issuer = readUrlFromMetadata('issuer')
+        }
         this.@issuer
     }
 
     // TODO: currently unused, but may be useful in the future
     String getLogoutUri() {
-        initializeOpenIdConfiguration()
+        if (!this.@logoutUri) {
+            initializeOpenIdConfiguration()
+            this.@logoutUri = readUrlFromMetadata('end_session_endpoint', false)
+        }
         this.@logoutUri
     }
 
     URL getJwksUrl() {
-        initializeOpenIdConfiguration()
+        if (!this.@jwksUri) {
+            initializeOpenIdConfiguration()
+            this.@jwksUri = readUrlFromMetadata('jwks_uri')
+        }
+
         try {
             return URI.create(this.@jwksUri).normalize().toURL()
         } catch (Exception e) {
@@ -125,13 +147,27 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
     }
 
     /**
-     * Reads a required URL value from the OIDC metadata map and validates that
-     * it is an absolute URL. If the key is missing or empty, either returns the
-     * provided default value (if not null) or throws an exception.
+     * Validates that the given string is an absolute URL.
      */
-    private static String readUrlFromMetadata(Map<String, Object> metadata, String key, boolean required = true) {
+    private static boolean isAbsoluteUrl(String url) {
+        try {
+            URI uri = URI.create(url)
+            return uri.absolute
+        } catch (Exception ignored) {
+            return false
+        }
+    }
+
+    /**
+     * Reads a URL value from OIDC metadata and validates that it is absolute.
+     *
+     * If {@code required} is true, missing/empty values raise an exception.
+     * If {@code required} is false, missing/empty values return null.
+     */
+    private String readUrlFromMetadata(String key, boolean required = true) {
+        log.debug("Reading OIDC metadata key '$key'")
         def rawValue = metadata[key]
-        String value = rawValue instanceof CharSequence ? rawValue.toString() : ''
+        String value = rawValue instanceof CharSequence ? rawValue.toString() : null
         if (!value) {
             if (!required) {
                 return value
@@ -146,34 +182,10 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
     }
 
     /**
-     * Validates that the given string is an absolute URL.
-     */
-    private static boolean isAbsoluteUrl(String url) {
-        try {
-            URI uri = URI.create(url)
-            return uri.absolute
-        } catch (Exception ignored) {
-            return false
-        }
-    }
-
-    /**
-     * Applies the OIDC configuration values from the given metadata map to the backing fields.
-     */
-    private void applyOpenIdConfiguration(Map<String, Object> metadata) {
-        // Use backing fields here to avoid triggering getters during lazy initialization
-        this.@authorizationEndpoint = readUrlFromMetadata(metadata, 'authorization_endpoint')
-        this.@tokenEndpoint = readUrlFromMetadata(metadata, 'token_endpoint')
-        this.@userInfoEndpoint = readUrlFromMetadata(metadata, 'userinfo_endpoint', false)
-        this.@issuer = readUrlFromMetadata(metadata, 'issuer', false)
-        this.@logoutUri = readUrlFromMetadata(metadata, 'end_session_endpoint', false)
-        this.@jwksUri = readUrlFromMetadata(metadata, 'jwks_uri', false)
-    }
-
-    /**
-     * Initializes the OIDC configuration by downloading the provider's discovery document and
-     * applying the configuration values. This method is thread-safe and will only perform the
-     * initialization once, even if called concurrently.
+     * Lazily loads the OIDC provider metadata from the discovery document if
+     * it has not already been loaded. This method is thread-safe and ensures
+     * that the metadata is only loaded once, even if multiple threads call it
+     * concurrently.
      */
     private void initializeOpenIdConfiguration() {
         if (openIdConfigurationLoaded) {
@@ -186,8 +198,8 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
             }
 
             String configurationUrl = domainWithoutTrailingSlash + '/.well-known/openid-configuration'
-            def metadata = downloadJson(configurationUrl)
-            applyOpenIdConfiguration(metadata)
+            log.debug("Loading OIDC configuration from provider metadata at ${configurationUrl}")
+            metadata = downloadJson(configurationUrl)
             openIdConfigurationLoaded = true
         }
     }

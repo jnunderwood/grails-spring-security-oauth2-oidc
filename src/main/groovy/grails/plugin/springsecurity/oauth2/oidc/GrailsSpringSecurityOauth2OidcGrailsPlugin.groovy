@@ -20,8 +20,9 @@ import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.oauth2.SpringSecurityOauth2BaseService
 import grails.plugin.springsecurity.oauth2.exception.OAuth2Exception
 import grails.plugins.Plugin
-import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
+
+import groovy.util.logging.Slf4j
 
 @Slf4j
 class GrailsSpringSecurityOauth2OidcGrailsPlugin extends Plugin {
@@ -78,7 +79,7 @@ class GrailsSpringSecurityOauth2OidcGrailsPlugin extends Plugin {
     void doWithApplicationContext() {
         log.trace("doWithApplicationContext")
         SpringSecurityOauth2BaseService oAuth2BaseService = grailsApplication.mainContext.getBean(SpringSecurityOauth2BaseService)
-        OidcAuth2Service oidcAuth2Service = grailsApplication.mainContext.getBean(OidcAuth2Service)
+        OidcOauth2Service oidcAuth2Service = grailsApplication.mainContext.getBean(OidcOauth2Service)
         try {
             oAuth2BaseService.registerProvider(oidcAuth2Service)
         } catch (OAuth2Exception exception) {

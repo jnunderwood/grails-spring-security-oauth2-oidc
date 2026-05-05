@@ -39,7 +39,7 @@ import java.security.interfaces.RSAPublicKey
 import java.util.concurrent.TimeUnit
 
 @CompileStatic
-class OidcAuth2Service extends OAuth2AbstractProviderService implements InitializingBean {
+class OidcOauth2Service extends OAuth2AbstractProviderService implements InitializingBean {
 
     private static final String[] DEFAULT_SCOPES = ['openid', 'profile', 'email']
 
