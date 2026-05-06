@@ -34,7 +34,7 @@ import groovy.util.logging.Slf4j
 @ConfigurationProperties(prefix = 'grails.plugin.springsecurity.oauth2.providers.oidc')
 class OidcOauth2Config extends OAuth2ProviderConfiguration {
 
-    // these values are configured by the user
+    // these values are user-configured
     String domain // the issuer URL of the OIDC provider; required
     String scope // configured by the 'scopes' (plural) property; optional
     String scopeSeparator // optional
@@ -122,7 +122,7 @@ class OidcOauth2Config extends OAuth2ProviderConfiguration {
     /**
      * Downloads and parses the OIDC discovery document from the given URL,
      * returning the metadata as a map. Throws an exception if the download
-     * or parsing fails, or if the resulting JSON is not an object.
+     * or parsing fails, or if the resulting JSON is not a Map.
      */
     private static Map<String, Object> downloadJson(String jsonUrl) {
         try {
