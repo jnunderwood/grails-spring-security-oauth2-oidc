@@ -43,7 +43,7 @@ grails:
                         scopes: "some_scope another_scope"          # Default: "openid profile email"
                         scopeSeparator: " "                         # Default: " "
                         
-                        # these endpoints are optional and will be discovered from OIDC metadata if not provided
+                        # these endpoints are optional and will be discovered from OIDC config URL if not provided
                         authorizationEndpoint: "https://your.oidc.provider.domain/oauth2/authorize"
                         tokenEndpoint: "https://your.oidc.provider.domain/oauth2/token"
                         userInfoEndpoint: "https://your.oidc.provider.domain/openid/userinfo"
@@ -53,7 +53,8 @@ grails:
 ```
 
 > Note that `springsecurity.providerNames` should not include `oidc` since the OAuth2 plugin 
-> will add all providers defined under `oauth2.providers` to the list of provider names.
+> will add all providers defined under `oauth2.providers` to the list of provider names. Of
+> course, you may not even need that setting at all depending on your requirements.
 
 Some providers require the `domain` to include a tenant ID or other path segments, so the
 plugin will use the full `domain` value as the Issuer URI when validating tokens. For example,
@@ -61,9 +62,8 @@ the `domain` might be `https://login.microsoftonline.com/{your_tenant_id}/v2.0` 
 releases of Azure AD.
 
 The plugin will try to obtain the endpoint URIs from the user configuration first, and if any 
-of the endpoints are not provided, it will attempt to discover them from the OIDC metadata JSON.
-This metadata is downloaded and parsed from the well-known OpenID Connect configuration URL 
-(`{domain}/.well-known/openid-configuration`).
+of the endpoints are not provided, it will attempt to discover them from the OpenID Connect
+configuration URL (`{domain}/.well-known/openid-configuration`). 
 
 You can replace the `successUri`, `failureUri`, and `callback` default values with your own 
 controller implementation.
