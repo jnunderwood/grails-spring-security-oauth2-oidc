@@ -2,7 +2,8 @@
 
 [![Java CI](https://github.com/grails-plugins/grails-spring-security-oauth2-oidc/actions/workflows/gradle.yml/badge.svg?branch=1.0.x)](https://github.com/grails-plugins/grails-spring-security-oauth2-oidc/actions/workflows/gradle.yml) 
 
-Add an OIDC OAuth2 provider to the [Spring Security Plugin](https://github.com/apache/grails-spring-security).
+Add an OIDC OAuth2 provider to the [Grails Core - Spring Security Plugin](https://github.com/apache/grails-core)
+([docs](https://grails.apache.org/docs/7.2.2/guide/security.html#springSecurityOauth2)).
 
 ## Installation
 
@@ -11,7 +12,7 @@ Add the following dependencies in `build.gradle`
 ```
 dependencies {
 ...
-    implementation 'org.apache.grails:grails-spring-security-oauth2:7.0.2'
+    implementation 'org.apache.grails:grails-spring-security-oauth2:7.2.2'
     implementation 'org.grails.plugins:spring-security-oauth2-oidc:1.0.+'
 ...
 }
