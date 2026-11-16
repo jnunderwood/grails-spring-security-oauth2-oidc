@@ -3,7 +3,7 @@
 [![Java CI](https://github.com/grails-plugins/grails-spring-security-oauth2-oidc/actions/workflows/gradle.yml/badge.svg?branch=1.0.x)](https://github.com/grails-plugins/grails-spring-security-oauth2-oidc/actions/workflows/gradle.yml) 
 
 Add an OIDC OAuth2 provider to the [Grails Core - Spring Security Plugin](https://github.com/apache/grails-core)
-([docs](https://grails.apache.org/docs/7.2.2/guide/security.html#springSecurityOauth2)).
+([docs](https://grails.apache.org/docs/7.2.4/guide/security.html#springSecurityOauth2)).
 
 ## Installation
 
@@ -12,7 +12,7 @@ Add the following dependencies in `build.gradle`
 ```
 dependencies {
 ...
-    implementation 'org.apache.grails:grails-spring-security-oauth2:7.2.2'
+    implementation 'org.apache.grails:grails-spring-security-oauth2:7.2.4'
     implementation 'org.grails.plugins:spring-security-oauth2-oidc:1.0.+'
 ...
 }
@@ -44,7 +44,7 @@ grails:
                         scopes: "some_scope another_scope"          # Default: "openid profile email"
                         scopeSeparator: " "                         # Default: " "
                         
-                        # these endpoints are optional and will be discovered from OIDC config URL if not provided
+                        # these endpoints are optional and will be discovered from the OIDC config URL if not provided
                         authorizationEndpoint: "https://your.oidc.provider.domain/oauth2/authorize"
                         tokenEndpoint: "https://your.oidc.provider.domain/oauth2/token"
                         userInfoEndpoint: "https://your.oidc.provider.domain/openid/userinfo"
